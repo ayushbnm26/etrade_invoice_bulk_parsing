@@ -160,7 +160,7 @@ class BulkProcessingTests(unittest.TestCase):
         workbook = workbook_from_bytes(result.public_workbook_bytes)
         invoice_sheets = [name for name in workbook.sheetnames if name != "Processing Summary"]
 
-        self.assertEqual(invoice_sheets, ["SYS-1", "SYS-2"])
+        self.assertEqual(invoice_sheets, ["first.pdf", "second.pdf"])
         self.assertEqual(result.successful_invoices, 2)
         self.assertEqual(result.total_item_rows, 2)
 
@@ -170,7 +170,7 @@ class BulkProcessingTests(unittest.TestCase):
             SequenceParser([make_invoice("INV-777", "SYS-777")]),
         )
 
-        worksheet = workbook_from_bytes(result.public_workbook_bytes)["SYS-777"]
+        worksheet = workbook_from_bytes(result.public_workbook_bytes)["invoice.pdf"]
         headers = [worksheet.cell(row=3, column=column).value for column in range(1, 17)]
 
         self.assertEqual(headers, PUBLIC_COLUMN_LABELS)
@@ -181,28 +181,28 @@ class BulkProcessingTests(unittest.TestCase):
 
     def test_duplicate_sheet_names_are_unique(self) -> None:
         result = self.process(
-            [make_upload(1, "one.pdf"), make_upload(2, "two.pdf")],
-            SequenceParser([make_invoice("INV-1", "DUP"), make_invoice("INV-2", "DUP")]),
+            [make_upload(1, "duplicate.pdf"), make_upload(2, "duplicate.pdf")],
+            SequenceParser([make_invoice("INV-1", "SYS-1"), make_invoice("INV-2", "SYS-2")]),
         )
 
         workbook = workbook_from_bytes(result.public_workbook_bytes)
 
-        self.assertIn("DUP", workbook.sheetnames)
-        self.assertIn("DUP_2", workbook.sheetnames)
+        self.assertIn("duplicate.pdf", workbook.sheetnames)
+        self.assertIn("duplicate.pdf_2", workbook.sheetnames)
 
     def test_long_sheet_names_are_trimmed_to_excel_limit(self) -> None:
-        long_ref = "SYS-" + ("1234567890" * 5)
-        result = self.process([make_upload(1, "long.pdf")], SequenceParser([make_invoice("INV", long_ref)]))
+        long_filename = "very-long-uploaded-invoice-filename-1234567890.pdf"
+        result = self.process([make_upload(1, long_filename)], SequenceParser([make_invoice("INV", "SYS")]))
 
         invoice_sheet = [name for name in workbook_from_bytes(result.public_workbook_bytes).sheetnames if name != "Processing Summary"][0]
 
         self.assertLessEqual(len(invoice_sheet), 31)
-        self.assertTrue(invoice_sheet.startswith("SYS-"))
+        self.assertTrue(invoice_sheet.startswith("very-long-uploaded-invoice"))
 
     def test_invalid_sheet_name_characters_are_replaced(self) -> None:
         result = self.process(
-            [make_upload(1, "invalid.pdf")],
-            SequenceParser([make_invoice("INV", "SYS/ABC*DEF?[1]:X")]),
+            [make_upload(1, "invoice[ABC].pdf")],
+            SequenceParser([make_invoice("INV", "SYS")]),
         )
 
         invoice_sheet = [name for name in workbook_from_bytes(result.public_workbook_bytes).sheetnames if name != "Processing Summary"][0]
@@ -220,8 +220,8 @@ class BulkProcessingTests(unittest.TestCase):
 
         self.assertEqual(result.successful_invoices, 1)
         self.assertEqual(result.failed_invoices, 1)
-        self.assertEqual(workbook["bad"]["A1"].value, "Invoice Processing Failed")
-        self.assertEqual(workbook["SYS-OK"]["A4"].value, "INV-OK")
+        self.assertEqual(workbook["bad.pdf"]["A1"].value, "Invoice Processing Failed")
+        self.assertEqual(workbook["ok.pdf"]["A4"].value, "INV-OK")
 
     def test_all_failed_run_still_creates_workbook(self) -> None:
         result = self.process(
@@ -233,8 +233,8 @@ class BulkProcessingTests(unittest.TestCase):
 
         self.assertEqual(result.successful_invoices, 0)
         self.assertEqual(result.failed_invoices, 2)
-        self.assertEqual(workbook["bad-one"]["A1"].value, "Invoice Processing Failed")
-        self.assertEqual(workbook["bad-two"]["A1"].value, "Invoice Processing Failed")
+        self.assertEqual(workbook["bad-one.pdf"]["A1"].value, "Invoice Processing Failed")
+        self.assertEqual(workbook["bad-two.pdf"]["A1"].value, "Invoice Processing Failed")
 
     def test_invalid_non_pdf_upload_is_per_file_failure(self) -> None:
         result = self.process([make_upload(1, "notes.txt", b"hello")], SequenceParser([]))

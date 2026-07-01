@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import re
 from dataclasses import replace
-from pathlib import Path
 
 from invoice_processing.bulk_models import PerFileOutcome
 
@@ -47,16 +46,8 @@ def sanitize_sheet_name(value: str) -> str:
 
 
 def _sheet_name_base(outcome: PerFileOutcome, index: int) -> str:
-    if outcome.succeeded:
-        system_ref_no = outcome.system_ref_no
-        if system_ref_no:
-            return system_ref_no
-        invoice_number = outcome.invoice_number
-        if invoice_number:
-            return invoice_number
-
-    stem = Path(outcome.upload.filename).stem
-    if stem:
-        return stem
+    filename = outcome.upload.filename
+    if filename:
+        return filename
 
     return f"Invoice_{index:03d}"
