@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "etrade-invoice-bulk-parsing"
+version = "1.0.0"
+description = "Bulk Etrade invoice PDF parser and team workbook generator."
+requires-python = ">=3.10"
+dependencies = [
+    "pdfplumber>=0.11.0",
+    "pandas>=2.0.0",
+    "openpyxl>=3.1.0",
+    "streamlit>=1.58.0",
+]
+
+[project.scripts]
+process-etrade-invoices = "invoice_processing.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
