@@ -43,6 +43,10 @@ def make_invoice(
     invoice_number: str = "INV-1001",
     system_ref_no: str = "SYS-1001",
     asin: str = "B000TEST",
+    shipping_name: str = "Seller Warehouse",
+    shipping_address: str = "Mumbai, Maharashtra",
+    receiver_shipping_name: str = "Customer Receiving",
+    receiver_shipping_address: str = "Bengaluru, Karnataka",
 ) -> ParsedInvoice:
     item = {
         "source_file": "source.pdf",
@@ -82,6 +86,10 @@ def make_invoice(
             "page_count": 1,
             "invoice_number": invoice_number,
             "system_ref_no": system_ref_no,
+            "shipping_name": shipping_name,
+            "shipping_address": shipping_address,
+            "receiver_shipping_name": receiver_shipping_name,
+            "receiver_shipping_address": receiver_shipping_address,
         },
         summary={
             "source_file": "source.pdf",
@@ -176,8 +184,46 @@ class BulkProcessingTests(unittest.TestCase):
         self.assertEqual(headers, PUBLIC_COLUMN_LABELS)
         self.assertEqual(worksheet["A4"].value, "INV-777")
         self.assertEqual(worksheet["B4"].value, "SYS-777")
+        self.assertEqual(worksheet["A6"].value, "Shipping Address")
+        self.assertEqual(worksheet["I6"].value, "Receiver Shipping Address")
+        self.assertIn("Seller Warehouse", worksheet["A7"].value)
+        self.assertIn("Mumbai, Maharashtra", worksheet["A7"].value)
+        self.assertIn("Customer Receiving", worksheet["I7"].value)
+        self.assertIn("Bengaluru, Karnataka", worksheet["I7"].value)
         self.assertEqual(worksheet.freeze_panes, "A4")
         self.assertFalse(worksheet.sheet_view.showGridLines)
+
+    def test_successful_sheets_include_invoice_specific_shipping_addresses(self) -> None:
+        result = self.process(
+            [make_upload(1, "first.pdf"), make_upload(2, "second.pdf")],
+            SequenceParser(
+                [
+                    make_invoice(
+                        "INV-1",
+                        "SYS-1",
+                        shipping_name="First Seller",
+                        shipping_address="First shipping address",
+                        receiver_shipping_name="First Receiver",
+                        receiver_shipping_address="First receiver address",
+                    ),
+                    make_invoice(
+                        "INV-2",
+                        "SYS-2",
+                        shipping_name="Second Seller",
+                        shipping_address="Second shipping address",
+                        receiver_shipping_name="Second Receiver",
+                        receiver_shipping_address="Second receiver address",
+                    ),
+                ]
+            ),
+        )
+
+        workbook = workbook_from_bytes(result.public_workbook_bytes)
+
+        self.assertIn("First Seller", workbook["first.pdf"]["A7"].value)
+        self.assertIn("First receiver address", workbook["first.pdf"]["I7"].value)
+        self.assertIn("Second Seller", workbook["second.pdf"]["A7"].value)
+        self.assertIn("Second receiver address", workbook["second.pdf"]["I7"].value)
 
     def test_duplicate_sheet_names_are_unique(self) -> None:
         result = self.process(

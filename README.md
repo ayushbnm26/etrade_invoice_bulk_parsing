@@ -75,6 +75,7 @@ For each successful invoice sheet:
 - Row 1 is a merged title: `Invoice Items`
 - Row 3 is the table header.
 - Row 4 onward contains item rows.
+- After the item table, the sheet shows the parsed shipping address and receiver shipping address for that invoice.
 - Freeze panes are set at `A4`.
 - Gridlines are hidden.
 - Styling is muted and minimal.
@@ -98,7 +99,7 @@ Successful invoice sheets expose exactly these columns:
 15. Other Tax Amount
 16. Total Amount
 
-No raw addresses, parser internals, validation internals, tracebacks, local paths, SMTP details, or debug fields are exposed in successful team-facing invoice sheets.
+No parser internals, validation internals, tracebacks, local paths, SMTP details, or debug fields are exposed in successful team-facing invoice sheets.
 
 ## Failure Handling
 

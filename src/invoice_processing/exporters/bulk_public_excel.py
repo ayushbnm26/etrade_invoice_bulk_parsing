@@ -129,6 +129,13 @@ class BulkPublicWorkbookExporter:
                 self._apply_number_format(cell, field_name)
 
         max_row = max(header_row, header_row + len(public_items))
+        self._append_address_footer(
+            worksheet,
+            header,
+            start_row=max_row + 2,
+            border=border,
+            text_color=text_color,
+        )
         worksheet.freeze_panes = "A4"
         worksheet.auto_filter.ref = f"A3:{get_column_letter(len(PUBLIC_ITEM_COLUMNS))}{max_row}"
         self._set_success_widths(worksheet)
@@ -176,6 +183,90 @@ class BulkPublicWorkbookExporter:
 
     def _prepare_sheet(self, worksheet: Any) -> None:
         worksheet.sheet_view.showGridLines = False
+
+    def _append_address_footer(
+        self,
+        worksheet: Any,
+        header: dict[str, Any],
+        *,
+        start_row: int,
+        border: Border,
+        text_color: str,
+    ) -> None:
+        heading_fill = PatternFill("solid", fgColor="EAF2F8")
+        body_fill = PatternFill("solid", fgColor="FBFCFE")
+        body_start_row = start_row + 1
+        body_end_row = start_row + 5
+        address_blocks = [
+            (1, 8, "Shipping Address", self._format_address(header, "shipping")),
+            (
+                9,
+                len(PUBLIC_ITEM_COLUMNS),
+                "Receiver Shipping Address",
+                self._format_address(header, "receiver_shipping"),
+            ),
+        ]
+
+        worksheet.row_dimensions[start_row].height = 22
+        for row_index in range(body_start_row, body_end_row + 1):
+            worksheet.row_dimensions[row_index].height = 20
+
+        for start_column, end_column, label, address in address_blocks:
+            worksheet.merge_cells(
+                start_row=start_row,
+                start_column=start_column,
+                end_row=start_row,
+                end_column=end_column,
+            )
+            heading_cell = worksheet.cell(row=start_row, column=start_column, value=label)
+            heading_cell.fill = heading_fill
+            heading_cell.font = Font(bold=True, color=text_color)
+            heading_cell.alignment = Alignment(horizontal="center", vertical="center")
+
+            worksheet.merge_cells(
+                start_row=body_start_row,
+                start_column=start_column,
+                end_row=body_end_row,
+                end_column=end_column,
+            )
+            body_cell = worksheet.cell(
+                row=body_start_row,
+                column=start_column,
+                value=address or "Not available",
+            )
+            body_cell.fill = body_fill
+            body_cell.font = Font(color=text_color)
+            body_cell.alignment = Alignment(vertical="top", wrap_text=True)
+
+            for row_cells in worksheet.iter_rows(
+                min_row=start_row,
+                max_row=body_end_row,
+                min_col=start_column,
+                max_col=end_column,
+            ):
+                for cell in row_cells:
+                    cell.border = border
+                    if cell.row > start_row:
+                        cell.fill = body_fill
+
+    def _format_address(self, header: dict[str, Any], prefix: str) -> str:
+        lines = [
+            header.get(f"{prefix}_name", ""),
+            header.get(f"{prefix}_address", ""),
+        ]
+
+        state_code = header.get(f"{prefix}_state_code", "")
+        gstin = header.get(f"{prefix}_gstin", "")
+        pan = header.get(f"{prefix}_pan", "")
+
+        if state_code:
+            lines.append(f"State Code: {state_code}")
+        if gstin:
+            lines.append(f"GSTIN: {gstin}")
+        if pan:
+            lines.append(f"PAN: {pan}")
+
+        return "\n".join(str(line) for line in lines if line)
 
     def _apply_number_format(self, cell: Any, field_name: str) -> None:
         if field_name == "qty":
