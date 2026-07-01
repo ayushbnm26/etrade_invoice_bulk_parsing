@@ -57,13 +57,7 @@ def main() -> None:
     settings = _read_bulk_settings()
     st.warning(USAGE_NOTICE)
 
-    uploaded_files = st.file_uploader(
-        "Upload Etrade invoice PDFs",
-        type=["pdf"],
-        accept_multiple_files=True,
-        max_upload_size=settings.max_upload_size_mb,
-        help="Upload supported Etrade invoice PDFs only.",
-    )
+    uploaded_files = _render_bulk_file_uploader(settings)
 
     upload_payloads = _read_uploaded_files(uploaded_files or [])
     current_upload_key = _upload_key(upload_payloads)
@@ -102,6 +96,28 @@ def _read_uploaded_files(uploaded_files: list[Any]) -> list[tuple[str, bytes]]:
     for uploaded_file in uploaded_files:
         payloads.append((uploaded_file.name, uploaded_file.getvalue()))
     return payloads
+
+
+def _render_bulk_file_uploader(settings: BulkUiSettings) -> list[Any]:
+    uploader_kwargs: dict[str, Any] = {
+        "label": "Upload Etrade invoice PDFs",
+        "type": ["pdf"],
+        "accept_multiple_files": True,
+        "key": "etrade_bulk_invoice_uploads",
+        "help": "Upload supported Etrade invoice PDFs only.",
+    }
+
+    try:
+        uploaded_files = st.file_uploader(
+            **uploader_kwargs,
+            max_upload_size=settings.max_upload_size_mb,
+        )
+    except TypeError as exc:
+        if "max_upload_size" not in str(exc):
+            raise
+        uploaded_files = st.file_uploader(**uploader_kwargs)
+
+    return list(uploaded_files or [])
 
 
 def _process_uploads(upload_payloads: list[tuple[str, bytes]]) -> dict[str, Any]:

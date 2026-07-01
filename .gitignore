@@ -7,7 +7,13 @@ __pycache__/
 venv/
 .env
 .streamlit/secrets.toml
+
+input_pdfs/*
+!input_pdfs/.gitkeep
+logs/*
+!logs/.gitkeep
+output/*
+!output/.gitkeep
+
 project_context_*.txt
-logs/
-output/
 *.log

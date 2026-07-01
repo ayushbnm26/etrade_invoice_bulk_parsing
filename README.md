@@ -1,12 +1,12 @@
-# Etrade Bulk Invoice Workbook Generator
+# Etrade Bulk Invoice Processing
 
-Bulk Streamlit utility for processing supported Etrade invoice PDFs into one team-facing Excel workbook.
+Streamlit utility for processing multiple supported Etrade invoice PDFs into one team-facing Excel workbook.
 
-The app is self-contained and deployable to Streamlit Community Cloud. It does not depend on the older single-invoice app.
+This repository is the bulk invoice processing app. The Streamlit UI, CLI, tests, and documentation are all organized around multi-file invoice batches.
 
 ## Purpose
 
-Finance users can upload one or many supported Etrade invoice PDFs in a single run and download one public/team workbook.
+Finance users can upload multiple supported Etrade invoice PDFs in a single run and download one public/team workbook.
 
 The team workbook contains:
 
@@ -49,7 +49,7 @@ OCR is not included.
 - Each uploaded file is validated and processed independently.
 - One failed file does not stop the rest of the batch.
 - Duplicate filenames are handled.
-- Duplicate invoice or system reference sheet names are made unique.
+- Duplicate uploaded filenames and derived sheet names are made unique.
 - Excel sheet names are sanitized and kept within Excel's 31-character limit.
 - Temporary directories are used for each run.
 - The app does not assume durable Streamlit filesystem storage.
@@ -176,11 +176,13 @@ Run the app:
 python -m streamlit run app.py
 ```
 
-Optional CLI run:
+Optional CLI run after placing one or more supported PDFs in `input_pdfs/`:
 
 ```bash
 python main.py --input-dir input_pdfs --output-dir output
 ```
+
+The `input_pdfs/`, `logs/`, and `output/` folders are kept in the repo with `.gitkeep` files. Actual PDFs, generated logs, generated workbooks, and context dumps are ignored so the repository stays source-only.
 
 ## Streamlit Secrets
 
