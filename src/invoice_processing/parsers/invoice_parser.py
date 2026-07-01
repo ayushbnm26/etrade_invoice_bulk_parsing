@@ -78,8 +78,7 @@ class InvoiceParser:
             "page_count": document.page_count,
             "invoice_reference_number": regex_value(r"Invoice Reference Number\s*:\s*([A-Za-z0-9]+)", text),
             "invoice_number": regex_value(r"Invoice Number\s*:\s*([A-Za-z0-9\-/]+)", text),
-            "system_ref_no": regex_value(r"System Ref No\s*:\s*(.*?)\s+Invoice Date\s*:", text)
-            or regex_value(r"System Ref No\s*:\s*([A-Za-z0-9\-/]+)", text),
+            "system_ref_no": regex_value(r"System Ref No\s*:\s*([A-Za-z0-9\-/]+)", text, flags=re.I),
             "invoice_date": regex_value(rf"Invoice Date\s*:\s*({DATE_PATTERN})", text),
             "credit_note_date": regex_value(rf"Credit Note Date\s*:\s*({DATE_PATTERN})", text),
             "due_date": regex_value(rf"Due Date\s*:\s*({DATE_PATTERN})", text),

@@ -21,7 +21,8 @@ from invoice_processing.bulk_processing import BulkInvoiceProcessor  # noqa: E40
 from invoice_processing.emailer import SMTPConfig, sanitize_email_exception  # noqa: E402
 from invoice_processing.exceptions import EmailDeliveryError, NoInvoiceRowsError  # noqa: E402
 from invoice_processing.exporters.public_transform import PUBLIC_COLUMN_LABELS  # noqa: E402
-from invoice_processing.models import ParsedInvoice  # noqa: E402
+from invoice_processing.models import ParsedInvoice, PdfDocumentData, PdfPageData  # noqa: E402
+from invoice_processing.parsers.invoice_parser import InvoiceParser  # noqa: E402
 from invoice_processing.upload_validation import build_uploaded_file  # noqa: E402
 
 
@@ -131,6 +132,24 @@ class BulkProcessingTests(unittest.TestCase):
     def process(self, uploads, parser: SequenceParser):
         with tempfile.TemporaryDirectory() as temp_dir:
             return BulkInvoiceProcessor(parser=parser).process(uploads, work_dir=Path(temp_dir))
+
+    def test_system_ref_no_stops_at_next_header_label(self) -> None:
+        cases = [
+            ("System Ref No : 42000104035 Credit Note Date : 02-Jun-2026", "42000104035"),
+            ("System Ref No : 42000103534 Credit Note Date : 02-Jun-2026", "42000103534"),
+            ("System Ref No : 30001158056 Invoice Date : 21-May-2026", "30001158056"),
+        ]
+
+        parser = InvoiceParser()
+        for text, expected in cases:
+            with self.subTest(text=text):
+                document = PdfDocumentData(
+                    path=Path("test.pdf"),
+                    page_count=1,
+                    pages=[PdfPageData(page_number=1, text=text, words=[], tables=[])],
+                )
+
+                self.assertEqual(parser._parse_header(document)["system_ref_no"], expected)
 
     def test_two_successful_uploads_create_two_invoice_sheets(self) -> None:
         result = self.process(
